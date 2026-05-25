@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RetroOS - Geetansh Goyal</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-primary: #050811;
+      --accent-cyan: #00ffd8;
+      --accent-cyan-glow: rgba(0, 255, 216, 0.4);
+      --accent-purple: #bd00ff;
+      --accent-purple-glow: rgba(189, 0, 255, 0.4);
+      --accent-green: #39ff14;
+      --accent-green-glow: rgba(57, 255, 20, 0.4);
+      --window-bg: rgba(13, 20, 38, 0.75);
+      --window-border: rgba(255, 255, 255, 0.08);
+      --text-main: #e2e8f0;
+      --text-muted: #94a3b8;
+      --taskbar-bg: rgba(8, 12, 24, 0.85);
+      --card-bg: rgba(255, 255, 255, 0.03);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      background-image: 
+        linear-gradient(var(--accent-cyan-glow) 0.5px, transparent 0.5px),
+        linear-gradient(90deg, var(--accent-cyan-glow) 0.5px, transparent 0.5px);
+      background-size: 40px 40px;
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+    }
+
+    /* Ambient Glow Spots */
+    .glow-spot-1 {
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 40vw;
+      height: 40vw;
+      background: radial-gradient(circle, rgba(0, 255, 216, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .glow-spot-2 {
+      position: absolute;
+      bottom: -10%;
+      right: -10%;
+      width: 40vw;
+      height: 40vw;
+      background: radial-gradient(circle, rgba(189, 0, 255, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Desktop Grid */
+    #desktop {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 50px);
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));
+      grid-gap: 20px;
+      grid-auto-flow: column;
+      align-content: start;
+      justify-items: center;
+      z-index: 10;
+    }
+
+    /* Desktop Icons */
+    .desktop-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 90px;
+      height: 95px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid transparent;
+      text-align: center;
+    }
+
+    .desktop-icon:hover {
+      background: rgba(0, 255, 216, 0.08);
+      border-color: rgba(0, 255, 216, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 255, 216, 0.05);
+    }
+
+    .desktop-icon:active {
+      transform: scale(0.95);
+    }
+
+    .desktop-icon svg {
+      width: 42px;
+      height: 42px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 2px 6px rgba(0, 255, 216, 0.3));
+      transition: transform 0.2s;
+    }
+
+    .desktop-icon:hover svg {
+      transform: scale(1.1);
+    }
+
+    .desktop-icon span {
+      font-size: 13px;
+      font-weight: 500;
+      color: #cbd5e1;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      max-width: 85px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Floating Windows */
+    .window {
+      position: absolute;
+      min-width: 320px;
+      min-height: 200px;
+      background: var(--window-bg);
+      border: 1px solid var(--window-border);
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      opacity: 0;
+      transform: scale(0.9) translateY(20px);
+      pointer-events: none;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+    }
+
+    .window.active-window {
+      border-color: rgba(0, 255, 216, 0.35);
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.7), 0 0 24px var(--accent-cyan-glow);
+    }
+
+    .window.show {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: all;
+    }
+
+    .window.maximized {
+      width: 100% !important;
+      height: calc(100% - 50px) !important;
+      top: 0 !important;
+      left: 0 !important;
+      border-radius: 0;
+    }
+
+    .window.minimized {
+      opacity: 0;
+      transform: scale(0.8) translateY(100px);
+      pointer-events: none;
+    }
+
+    /* Window Header */
+    .window-header {
+      background: rgba(18, 27, 45, 0.9);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--window-border);
+      cursor: move;
+    }
+
+    .window-title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .window-title-area svg {
+      width: 18px;
+      height: 18px;
+      filter: drop-shadow(0 0 4px var(--accent-cyan-glow));
+    }
+
+    .window-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #f8fafc;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .window-btn {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .window-btn-close { background: #ff5f56; }
+    .window-btn-close:hover { background: #e04f47; }
+    .window-btn-min { background: #ffbd2e; }
+    .window-btn-min:hover { background: #e0a324; }
+    .window-btn-max { background: #27c93f; }
+    .window-btn-max:hover { background: #1fa331; }
+
+    /* Window Body */
+    .window-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Scrollbar */
+    .window-body::-webkit-scrollbar {
+      width: 8px;
+    }
+    .window-body::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .window-body::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 216, 0.15);
+      border-radius: 4px;
+    }
+    .window-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 255, 216, 0.35);
+    }
+
+    /* Widgets / Cards */
+    .profile-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin-bottom: 16px;
+      border-radius: 50%;
+      padding: 4px;
+      background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple));
+      box-shadow: 0 0 20px rgba(0, 255, 216, 0.3);
+    }
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #0d1426;
+    }
+
+    .status-badge {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: var(--accent-green);
+      color: #000;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px var(--accent-green-glow);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .profile-card h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .profile-card .tagline {
+      font-size: 14px;
+      color: var(--accent-cyan);
+      font-family: 'Fira Code', monospace;
+      margin-bottom: 12px;
+    }
+
+    .profile-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .social-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .social-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    .social-btn:hover {
+      background: var(--accent-cyan-glow);
+      border-color: var(--accent-cyan);
+      color: #000;
+      transform: translateY(-3px);
+      box-shadow: 0 0 10px var(--accent-cyan);
+    }
+
+    .social-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* Skills Panel */
+    .skills-category {
+      margin-bottom: 24px;
+    }
+
+    .skills-category h3 {
+      font-family: 'Fira Code', monospace;
+      font-size: 14px;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+      border-left: 3px solid var(--accent-cyan);
+      padding-left: 8px;
+    }
+
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .skill-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .skill-card:hover {
+      border-color: rgba(0, 255, 216, 0.15);
+      background: rgba(0, 255, 216, 0.02);
+      transform: translateY(-2px);
+    }
+
+    .skill-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .skill-name {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .skill-val {
+      font-family: 'Fira Code', monospace;
+      font-size: 10px;
+      color: var(--accent-cyan);
+    }
+
+    .skill-bar-bg {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .skill-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+      box-shadow: 0 0 6px var(--accent-cyan-glow);
+    }
+
+    /* Projects Grid */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .project-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+
+    .project-card:hover {
+      border-color: rgba(0, 255, 216, 0.2);
+      box-shadow: 0 4px 20px rgba(0, 255, 216, 0.06);
+      transform: translateY(-2px);
+    }
+
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+
+    .project-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .project-date {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .project-description {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .project-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .project-tag {
+      font-size: 10px;
+      font-family: 'Fira Code', monospace;
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+      color: #94a3b8;
+    }
+
+    .project-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .project-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-cyan);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+    }
+
+    .project-link:hover {
+      color: #fff;
+      text-shadow: 0 0 8px var(--accent-cyan-glow);
+    }
+
+    /* Terminal Application */
+    .terminal-container {
+      background: #040711;
+      font-family: 'Fira Code', monospace;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+    }
+
+    .terminal-output {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      color: #00ff66;
+      text-shadow: 0 0 4px rgba(0, 255, 102, 0.4);
+    }
+
+    .terminal-line {
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+    }
+
+    .terminal-green { color: #00ff66; }
+    .terminal-cyan { color: var(--accent-cyan); }
+    .terminal-purple { color: #d946ef; }
+    .terminal-yellow { color: #facc15; }
+    .terminal-white { color: #fff; }
+
+    .terminal-input-row {
+      display: flex;
+      align-items: center;
+      background: #02040b;
+      padding: 10px 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .terminal-prompt {
+      color: var(--accent-cyan);
+      margin-right: 8px;
+      font-weight: bold;
+    }
+
+    .terminal-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+    }
+
+    /* Mail Form */
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      font-family: 'Fira Code', monospace;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-control {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'Outfit', sans-serif;
+      color: #fff;
+      outline: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 255, 216, 0.15);
+    }
+
+    .submit-btn {
+      background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple));
+      border: none;
+      border-radius: 6px;
+      color: #000;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      padding: 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 4px 15px rgba(0, 255, 216, 0.2);
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .submit-btn:hover {
+      box-shadow: 0 6px 20px rgba(0, 255, 216, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .form-status {
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .form-status.success { color: var(--accent-green); }
+    .form-status.error { color: #f87171; }
+
+    /* Taskbar */
+    #taskbar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 50px;
+      background: var(--taskbar-bg);
+      border-top: 1px solid var(--window-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .taskbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Start Button */
+    .start-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      color: #000;
+      font-weight: 800;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(0, 255, 216, 0.3);
+      transition: all 0.2s;
+    }
+
+    .start-btn:hover {
+      box-shadow: 0 0 18px rgba(0, 255, 216, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .start-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .start-btn span {
+      letter-spacing: 0.5px;
+    }
+
+    /* Running Tasks Icons */
+    .running-tasks {
+      display: flex;
+      gap: 8px;
+    }
+
+    .taskbar-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 6px 12px;
+      max-width: 140px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .taskbar-tab:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .taskbar-tab.active-tab {
+      background: rgba(0, 255, 216, 0.08);
+      border-color: var(--accent-cyan);
+      box-shadow: inset 0 0 6px var(--accent-cyan-glow);
+    }
+
+    .taskbar-tab svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .taskbar-tab span {
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Taskbar Right */
+    .taskbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .system-clock {
+      font-weight: 500;
+    }
+
+    /* Start Menu */
+    .start-menu {
+      position: absolute;
+      bottom: 60px;
+      left: 16px;
+      width: 320px;
+      background: var(--taskbar-bg);
+      border: 1px solid var(--window-border);
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 216, 0.05);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      z-index: 9999;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      pointer-events: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .start-menu.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    .start-menu-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .start-menu-profile img {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--accent-cyan);
+    }
+
+    .start-menu-profile h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .start-menu-profile p {
+      font-size: 11px;
+      color: var(--accent-cyan);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .start-menu-items {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .start-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 13px;
+      transition: background 0.15s;
+    }
+
+    .start-menu-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--accent-cyan);
+    }
+
+    .start-menu-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Voxel Assistant Helper */
+    .assistant-avatar {
+      position: absolute;
+      bottom: 60px;
+      right: 20px;
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-cyan) 0%, var(--accent-purple) 100%);
+      border: 2px solid #fff;
+      box-shadow: 0 4px 15px rgba(0, 255, 216, 0.3), 0 0 10px var(--accent-cyan-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .assistant-avatar:hover {
+      transform: scale(1.1) rotate(5deg);
+      box-shadow: 0 6px 20px rgba(0, 255, 216, 0.5), 0 0 15px var(--accent-cyan);
+    }
+
+    .assistant-avatar img {
+      width: 90%;
+      height: 90%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .assistant-bubble {
+      position: absolute;
+      bottom: 135px;
+      right: 20px;
+      width: 250px;
+      background: rgba(13, 20, 38, 0.95);
+      border: 1px solid var(--accent-cyan);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 15px var(--accent-cyan-glow);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #e2e8f0;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .assistant-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      right: 26px;
+      border-width: 8px 8px 0;
+      border-style: solid;
+      border-color: var(--accent-cyan) transparent;
+      display: block;
+      width: 0;
+    }
+
+    .assistant-bubble.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    .assistant-close-btn {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 10px;
+    }
+    
+    .assistant-close-btn:hover {
+      color: #fff;
+    }
+
+    /* GSoC Diagram */
+    .diagram-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+
+    .diagram-title {
+      font-family: 'Fira Code', monospace;
+      font-size: 11px;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .diagram-flow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .diagram-node {
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .diagram-node.active-node {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 6px var(--accent-cyan-glow);
+    }
+
+    .diagram-arrow {
+      color: var(--accent-purple);
+      text-shadow: 0 0 4px var(--accent-purple-glow);
+      font-weight: bold;
+    }
+
+    /* Utility */
+    .glow-cyan { color: var(--accent-cyan); text-shadow: 0 0 6px var(--accent-cyan-glow); }
+    .glow-purple { color: var(--accent-purple); text-shadow: 0 0 6px var(--accent-purple-glow); }
+    .glow-green { color: var(--accent-green); text-shadow: 0 0 6px var(--accent-green-glow); }
+    
+    .edu-item {
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+    }
+    
+    .edu-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .edu-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .edu-inst {
+      font-size: 12px;
+      color: var(--accent-cyan);
+    }
+
+    .edu-grade {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'Fira Code', monospace;
+    }
+    
+    .badge-icon {
+      font-size: 24px;
+      margin-right: 12px;
+    }
+    
+    .cert-item {
+      display: flex;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    
+    .cert-item:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Light Effects -->
+  <div class="glow-spot-1"></div>
+  <div class="glow-spot-2"></div>
+
+  <!-- Desktop Environment -->
+  <div id="desktop">
+    
+    <!-- About Me Icon -->
+    <div class="desktop-icon" onclick="openWindow('about')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="7" r="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>About_Me</span>
+    </div>
+
+    <!-- GSoC Icon -->
+    <div class="desktop-icon" onclick="openWindow('gsoc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="3" width="20" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 21h8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 17v4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 7v5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 9.5l4-2.5 4 2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>GSoC_Project</span>
+    </div>
+
+    <!-- Projects Icon -->
+    <div class="desktop-icon" onclick="openWindow('projects')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 11v6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 14h6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Projects</span>
+    </div>
+
+    <!-- Skills Icon -->
+    <div class="desktop-icon" onclick="openWindow('skills')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"/>
+        <path d="M6 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3z"/>
+        <path d="M12 3v18" stroke-linecap="round"/>
+      </svg>
+      <span>Skills.sh</span>
+    </div>
+
+    <!-- Certifications Icon -->
+    <div class="desktop-icon" onclick="openWindow('certs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="8" r="7" stroke-linecap="round"/>
+        <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Credentials</span>
+    </div>
+
+    <!-- Terminal Icon -->
+    <div class="desktop-icon" onclick="openWindow('terminal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <polyline points="4 17 10 11 4 5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="12" y1="19" x2="20" y2="19" stroke-linecap="round"/>
+      </svg>
+      <span>Terminal.app</span>
+    </div>
+
+    <!-- Email Client Icon -->
+    <div class="desktop-icon" onclick="openWindow('mail')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="22,6 12,13 2,6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Contact.sh</span>
+    </div>
+
+  </div>
+
+  <!-- FLOATING WINDOWS -->
+
+  <!-- Window: About Me -->
+  <div id="win-about" class="window" style="width: 480px; height: 520px; top: 80px; left: 80px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-cyan">
+          <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/>
+        </svg>
+        <span class="window-title">about_me.txt</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('about')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('about')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('about')"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="profile-card">
+        <div class="avatar-wrapper">
+          <img src="./images/avatar.jpg" alt="Voxel Avatar" class="avatar-img">
+          <div class="status-badge">Available</div>
+        </div>
+        <h1>Geetansh Goyal</h1>
+        <div class="tagline">Competitive Programmer & Dev</div>
+        <p>Competitive programmer and open-source developer with experience in building event-driven architectures, scalable automation systems, and modern web environments.</p>
+        
+        <div class="social-row">
+          <a href="https://linkedin.com/in/geetanshgoyal" target="_blank" class="social-btn" title="LinkedIn">
+            <svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+          </a>
+          <a href="https://github.com/geetxnshgoyal" target="_blank" class="social-btn" title="GitHub">
+            <svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+          </a>
+          <a href="https://codeforces.com/profile/geetanshgoyal" target="_blank" class="social-btn" title="Codeforces">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.5 7.5A1.5 1.5 0 0 1 6 6h3a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 9 18H6a1.5 1.5 0 0 1-1.5-1.5v-9zm9-4.5A1.5 1.5 0 0 1 15 1.5h3A1.5 1.5 0 0 1 19.5 3v13.5A1.5 1.5 0 0 1 18 18h-3a1.5 1.5 0 0 1-1.5-1.5V3zm9 7.5a1.5 1.5 0 0 1 1.5-1.5h3a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5h-3a1.5 1.5 0 0 1-1.5-1.5v-6z" transform="scale(0.8) translate(3, 3)"/></svg>
+          </a>
+          <a href="https://leetcode.com/geetanshgoyal" target="_blank" class="social-btn" title="Leetcode">
+            <svg viewBox="0 0 24 24"><path d="M13.483 0a1.374 1.374 0 0 0-.961.414l-9.88 9.88a1.374 1.374 0 0 0 0 1.94l9.88 9.88a1.37 1.37 0 0 0 1.94 0l9.88-9.88a1.374 1.374 0 0 0 0-1.94l-9.88-9.88A1.374 1.374 0 0 0 13.483 0zm.083 4.854c.376 0 .733.15 1 .414l5.96 5.96c.264.267.414.624.414 1a1.374 1.374 0 0 1-.414 1l-5.96 5.96a1.37 1.37 0 0 1-1.94 0l-5.96-5.96a1.374 1.374 0 0 1 0-1.94l5.96-5.96a1.37 1.37 0 0 1 .94-.414z" transform="scale(0.85) translate(2, 2)"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <h3 class="glow-cyan" style="font-family:'Fira Code'; font-size:14px; margin-bottom:8px;">Education</h3>
+          <div class="edu-item">
+            <div class="edu-header">
+              <span>Bachelor of Technology (CS)</span>
+              <span class="glow-cyan">2025 - 2029</span>
+            </div>
+            <div class="edu-inst">Newton School of Technology, S-VYASA</div>
+            <div class="edu-grade">Grade: 7.48 / 10.0</div>
+          </div>
+          <div class="edu-item">
+            <div class="edu-header">
+              <span>Intermediate (Class XII)</span>
+              <span class="glow-purple">2024 - 2025</span>
+            </div>
+            <div class="edu-inst">Shri Uttam Public School</div>
+            <div class="edu-grade">Grade: 69.0%</div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="glow-cyan" style="font-family:'Fira Code'; font-size:14px; margin-bottom:8px;">Internships</h3>
+          <div class="edu-item">
+            <div class="edu-header">
+              <span>Contributor</span>
+              <span class="glow-green">2026 - Present</span>
+            </div>
+            <div class="edu-inst">Google Summer of Code @ openSUSE Project</div>
+            <div class="edu-grade">Bengaluru (Uyuni automation, MQTT, Node-RED)</div>
+          </div>
+          <div class="edu-item">
+            <div class="edu-header">
+              <span>Web Developer</span>
+              <span class="glow-purple">2024</span>
+            </div>
+            <div class="edu-inst">Varlyq Technologies</div>
+            <div class="edu-grade">Remote (Responsive JS/CSS modules, UI components)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Window: GSoC Project -->
+  <div id="win-gsoc" class="window" style="width: 500px; height: 480px; top: 120px; left: 140px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-green">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <span class="window-title">GSoC_openSUSE.sh</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('gsoc')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('gsoc')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('gsoc')"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div style="background:rgba(0,0,0,0.2); padding:16px; border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:16px;">
+        <h2 style="font-size:18px; margin-bottom:8px;" class="glow-green">Google Summer of Code 2026</h2>
+        <p style="font-size:13px; color:#cbd5e1;">Selected as a core contributor for the <b>openSUSE Project</b>, working on the <b>Uyuni</b> system management platform to implement modular, high-throughput event-driven automation pipelines.</p>
+      </div>
+
+      <h3 style="font-family:'Fira Code'; font-size:13px; color:var(--accent-green); margin-bottom:8px;">Core Work & Responsibilities</h3>
+      <ul style="list-style-type:square; padding-left:20px; font-size:13px; color:var(--text-muted); display:flex; flex-direction:column; gap:6px; margin-bottom:20px;">
+        <li>Integrating <b>MQTT</b> message brokerage with <b>Node-RED</b> workflow engines.</li>
+        <li>Architecting highly responsive event-driven automation adapters for Uyuni.</li>
+        <li>Deploying highly scalable workflows for large-scale enterprise system management.</li>
+        <li>Collaborating in a global open-source environment, writing clean, well-documented production code.</li>
+      </ul>
+
+      <div class="diagram-container">
+        <div class="diagram-title">Event-Driven Automation Flow</div>
+        <div class="diagram-flow">
+          <div class="diagram-node">Uyuni Core</div>
+          <div class="diagram-arrow">➔</div>
+          <div class="diagram-node active-node">MQTT broker</div>
+          <div class="diagram-arrow">➔</div>
+          <div class="diagram-node">Node-RED</div>
+          <div class="diagram-arrow">➔</div>
+          <div class="diagram-node active-node">Target System</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Window: Projects -->
+  <div id="win-projects" class="window" style="width: 580px; height: 500px; top: 100px; left: 240px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-cyan">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="window-title">projects_showcase.app</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('projects')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('projects')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('projects')"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <div class="projects-grid">
+        
+        <!-- Project 1 -->
+        <div class="project-card">
+          <div class="project-header">
+            <span class="project-title glow-cyan">RetroOS - AI Powered Retro OS</span>
+            <span class="project-date">Feb 2026</span>
+          </div>
+          <p class="project-description">A fully functional, browser-based operating system containing over 15 applications. Built completely with zero external dependencies.</p>
+          <div class="project-tags">
+            <span class="project-tag">Vanilla JS</span>
+            <span class="project-tag">Canvas API</span>
+            <span class="project-tag">Web Audio API</span>
+            <span class="project-tag">AI Chat API</span>
+          </div>
+          <div class="project-links">
+            <a href="https://github.com/geetxnshgoyal/RetroOS" class="project-link" target="_blank">GitHub</a>
+            <a href="https://retroos.geetanshgoyal.in" class="project-link" target="_blank">Live Demo</a>
+          </div>
+        </div>
+
+        <!-- Project 2 -->
+        <div class="project-card">
+          <div class="project-header">
+            <span class="project-title glow-purple">Instagram CLI Client</span>
+            <span class="project-date">Jan 2026</span>
+          </div>
+          <p class="project-description">Lightweight command-line tool built in Python. Supports complete terminal-based DM messaging, inbox queries, secure 2FA logins, and background polling automation.</p>
+          <div class="project-tags">
+            <span class="project-tag">Python</span>
+            <span class="project-tag">Instagrapi</span>
+            <span class="project-tag">CLI Architecture</span>
+            <span class="project-tag">Automation</span>
+          </div>
+          <div class="project-links">
+            <a href="https://github.com/geetxnshgoyal/instagram-cli" class="project-link" target="_blank">GitHub</a>
+          </div>
+        </div>
+
+        <!-- Project 3 -->
+        <div class="project-card">
+          <div class="project-header">
+            <span class="project-title glow-green">NST Construct Hackathon Platform</span>
+            <span class="project-date">Sep 2025</span>
+          </div>
+          <p class="project-description">Full-stack platform that successfully hosted our regional hackathon managing over 700 registrations. Mitigated a severe real-time 15k+ bot attack via backend validation.</p>
+          <div class="project-tags">
+            <span class="project-tag">React</span>
+            <span class="project-tag">Vite</span>
+            <span class="project-tag">Express.js</span>
+            <span class="project-tag">Firebase</span>
+            <span class="project-tag">TailwindCSS</span>
+          </div>
+          <div class="project-links">
+            <a href="https://github.com/geetxnshgoyal/nst-construct" class="project-link" target="_blank">GitHub</a>
+            <a href="https://construct.newtonschool.co" class="project-link" target="_blank">Live Demo</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Window: Skills -->
+  <div id="win-skills" class="window" style="width: 440px; height: 420px; top: 150px; left: 160px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-purple">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+          <polyline points="2 17 12 22 22 17"/>
+          <polyline points="2 12 12 17 22 12"/>
+        </svg>
+        <span class="window-title">skills_terminal.sh</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('skills')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('skills')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('skills')"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      
+      <!-- Category 1 -->
+      <div class="skills-category">
+        <h3>Languages</h3>
+        <div class="skills-grid">
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">C++</span>
+              <span class="skill-val">90%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 90%;"></div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">JavaScript</span>
+              <span class="skill-val">85%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">Python</span>
+              <span class="skill-val">80%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">HTML/CSS</span>
+              <span class="skill-val">90%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 90%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category 2 -->
+      <div class="skills-category">
+        <h3>Frameworks & Architecture</h3>
+        <div class="skills-grid">
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">React.js</span>
+              <span class="skill-val">80%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">Node-RED / MQTT</span>
+              <span class="skill-val">85%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">TailwindCSS</span>
+              <span class="skill-val">85%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+          <div class="skill-card">
+            <div class="skill-info">
+              <span class="skill-name">Git & Actions</span>
+              <span class="skill-val">80%</span>
+            </div>
+            <div class="skill-bar-bg">
+              <div class="skill-bar-fill" style="width: 80%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Window: Credentials -->
+  <div id="win-certs" class="window" style="width: 460px; height: 360px; top: 180px; left: 180px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-cyan">
+          <circle cx="12" cy="8" r="7"/>
+          <path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/>
+        </svg>
+        <span class="window-title">credentials.txt</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('certs')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('certs')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('certs')"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      
+      <div class="cert-item">
+        <div class="badge-icon">🏆</div>
+        <div>
+          <h4 style="font-weight: 700; color:#fff;">ICPC Amritapuri Regionalist 2025</h4>
+          <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">Qualified and competed in the prestigious ICPC International Collegiate Programming Contest Amritapuri Regionals, showcasing top-tier algorithmic problem solving.</p>
+        </div>
+      </div>
+
+      <div class="cert-item" style="margin-top:16px;">
+        <div class="badge-icon">💼</div>
+        <div>
+          <h4 style="font-weight: 700; color:#fff;">Certificate of Web Development Internship</h4>
+          <p style="font-size:12px; color:var(--text-muted); margin-top:2px;">Successfully completed a task-driven web development internship at Varlyq Technologies, building responsive systems, modern grid systems, and complex DOM components.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Window: Terminal -->
+  <div id="win-terminal" class="window" style="width: 550px; height: 400px; top: 90px; left: 200px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-green">
+          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+        <span class="window-title">RetroOS_Terminal.app</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('terminal')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('terminal')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('terminal')"></button>
+      </div>
+    </div>
+    <div class="window-body" style="padding: 0; background: #040711;">
+      <div class="terminal-container">
+        <div class="terminal-output" id="terminal-out">
+          <div class="terminal-line">Welcome to <span class="terminal-cyan">RetroOS v2.6.0</span> (AI-Engine enabled).</div>
+          <div class="terminal-line">Type <span class="terminal-yellow">help</span> to view available system commands.</div>
+          <div class="terminal-line"></div>
+        </div>
+        <div class="terminal-input-row">
+          <span class="terminal-prompt">geetansh@retroos:~$</span>
+          <input type="text" class="terminal-input" id="terminal-in" autocomplete="off" autofocus>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Window: Contact / Email Client -->
+  <div id="win-mail" class="window" style="width: 440px; height: 480px; top: 70px; left: 160px;">
+    <div class="window-header">
+      <div class="window-title-area">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="glow-cyan">
+          <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 7 12 14 2 7"/>
+        </svg>
+        <span class="window-title">Compose_Email.app</span>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn window-btn-min" onclick="minimizeWindow('mail')"></button>
+        <button class="window-btn window-btn-max" onclick="toggleMaximizeWindow('mail')"></button>
+        <button class="window-btn window-btn-close" onclick="closeWindow('mail')"></button>
+      </div>
+    </div>
+    <div class="window-body">
+      <form class="contact-form" id="email-form" onsubmit="sendMail(event)">
+        <div class="form-group">
+          <label for="mail-name">Your Name</label>
+          <input type="text" class="form-control" id="mail-name" required placeholder="e.g. John Doe">
+        </div>
+        <div class="form-group">
+          <label for="mail-email">Your Email</label>
+          <input type="email" class="form-control" id="mail-email" required placeholder="e.g. john@example.com">
+        </div>
+        <div class="form-group">
+          <label for="mail-company">Company (Optional)</label>
+          <input type="text" class="form-control" id="mail-company" placeholder="e.g. Acme Corp">
+        </div>
+        <div class="form-group">
+          <label for="mail-message">Message</label>
+          <textarea class="form-control" id="mail-message" rows="4" required placeholder="Hi Geetansh, let's connect..."></textarea>
+        </div>
+        <button type="submit" class="submit-btn" id="mail-submit">Send Transmission</button>
+        <div id="mail-status" class="form-status"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FLOATING ASSISTANT -->
+  <div class="assistant-avatar" onclick="toggleAssistant()">
+    <img src="./images/avatar.jpg" alt="Assistant avatar">
+  </div>
+  <div class="assistant-bubble" id="assistant-bubble">
+    <button class="assistant-close-btn" onclick="toggleAssistant()">✕</button>
+    <div id="assistant-text">Welcome! Double-click or click any desktop icon to explore my projects, GSoC work, skills, and certifications! Or open the Terminal and type 'neofetch'! 🚀</div>
+  </div>
+
+  <!-- TASKBAR -->
+  <div id="taskbar">
+    <div class="taskbar-left">
+      <button class="start-btn" onclick="toggleStartMenu()">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        <span>START</span>
+      </button>
+      <div class="running-tasks" id="task-tabs">
+        <!-- Running apps tabs will inject here dynamically -->
+      </div>
+    </div>
+    <div class="taskbar-right">
+      <div class="system-clock" id="system-clock">22:35</div>
+    </div>
+  </div>
+
+  <!-- START MENU -->
+  <div class="start-menu" id="start-menu">
+    <div class="start-menu-profile">
+      <img src="./images/avatar.jpg" alt="Profile avatar">
+      <div>
+        <h4>Geetansh Goyal</h4>
+        <p>GSoC '26 Contributor</p>
+      </div>
+    </div>
+    <div class="start-menu-items">
+      <div class="start-menu-item" onclick="openWindow('about'); toggleStartMenu();">
+        📂 <span>About Me</span>
+      </div>
+      <div class="start-menu-item" onclick="openWindow('gsoc'); toggleStartMenu();">
+        🚀 <span>GSoC Contribution</span>
+      </div>
+      <div class="start-menu-item" onclick="openWindow('projects'); toggleStartMenu();">
+        💻 <span>Projects Showcases</span>
+      </div>
+      <div class="start-menu-item" onclick="openWindow('skills'); toggleStartMenu();">
+        ⚡ <span>Tech Stack</span>
+      </div>
+      <div class="start-menu-item" onclick="openWindow('certs'); toggleStartMenu();">
+        🏅 <span>Credentials</span>
+      </div>
+      <div class="start-menu-item" onclick="openWindow('terminal'); toggleStartMenu();">
+        🐚 <span>Open Terminal</span>
+      </div>
+      <div class="start-menu-item" onclick="openWindow('mail'); toggleStartMenu();">
+        ✉️ <span>Email Contact</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUDIO KEY CLICK INTEGRATION & WINDOW DRAGGABILITY INTERACTION -->
+  <script>
+    // Propagate keys to the parent for physical key click sounds
+    window.addEventListener('keydown', (e) => {
+      if (window.parent) {
+        window.parent.postMessage({ type: 'keydown', key: e.key }, '*');
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (window.parent) {
+        window.parent.postMessage({ type: 'keyup', key: e.key }, '*');
+      }
+    });
+
+    // Window Management & Z-Indices
+    let openWindows = {};
+    let activeWindowId = '';
+    let topZIndex = 100;
+    const windowPositions = {
+      about: { w: 480, h: 520, x: 60, y: 40 },
+      gsoc: { w: 500, h: 480, x: 120, y: 60 },
+      projects: { w: 580, h: 500, x: 180, y: 50 },
+      skills: { w: 440, h: 420, x: 140, y: 120 },
+      certs: { w: 460, h: 360, x: 200, y: 150 },
+      terminal: { w: 550, h: 400, x: 240, y: 80 },
+      mail: { w: 440, h: 480, x: 150, y: 70 }
+    };
+
+    // System Clock
+    function updateClock() {
+      const date = new Date();
+      let hours = date.getHours();
+      let minutes = date.getMinutes();
+      hours = hours < 10 ? '0' + hours : hours;
+      minutes = minutes < 10 ? '0' + minutes : minutes;
+      document.getElementById('system-clock').innerText = `${hours}:${minutes}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Start Menu Toggle
+    function toggleStartMenu() {
+      const menu = document.getElementById('start-menu');
+      menu.classList.toggle('show');
+    }
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('start-menu');
+      const startBtn = document.querySelector('.start-btn');
+      if (menu.classList.contains('show') && !menu.contains(e.target) && !startBtn.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+
+    // Assistant Bot
+    const assistantQuotes = [
+      "Fun Fact: I qualified for the ICPC Amritapuri Regionals in 2025! 🏆",
+      "I am currently selected for Google Summer of Code 2026 under openSUSE! 🚀",
+      "Double-click any desktop icon to run applications!",
+      "Try opening the Terminal and typing 'neofetch' or 'projects'! 🐚",
+      "Feel free to send a message via Compose_Email.app! It's fully functional!",
+      "I built a browser operating system named RetroOS containing 15 apps! 💻",
+      "You can drag these windows around using their header bars!"
+    ];
+
+    function toggleAssistant() {
+      const bubble = document.getElementById('assistant-bubble');
+      bubble.classList.toggle('show');
+      if (bubble.classList.contains('show')) {
+        const randomQuote = assistantQuotes[Math.floor(Math.random() * assistantQuotes.length)];
+        document.getElementById('assistant-text').innerText = randomQuote;
+      }
+    }
+
+    // Draggable Windows Implementation
+    document.querySelectorAll('.window').forEach(win => {
+      const header = win.querySelector('.window-header');
+      let isDragging = false;
+      let startX, startY, startLeft, startTop;
+
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('window-btn')) return; // ignore control buttons
+        
+        isDragging = true;
+        focusWindow(win.id.replace('win-', ''));
+        
+        // Handle max state
+        if (win.classList.contains('maximized')) return;
+
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(win.style.left) || 0;
+        startTop = parseInt(win.style.top) || 0;
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      function onMouseMove(e) {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        let newLeft = startLeft + dx;
+        let newTop = startTop + dy;
+
+        // Contain within viewport
+        newLeft = Math.max(-50, Math.min(window.innerWidth - 100, newLeft));
+        newTop = Math.max(0, Math.min(window.innerHeight - 100, newTop));
+
+        win.style.left = `${newLeft}px`;
+        win.style.top = `${newTop}px`;
+      }
+
+      function onMouseUp() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+      
+      // Click to focus window
+      win.addEventListener('mousedown', () => {
+        focusWindow(win.id.replace('win-', ''));
+      });
+    });
+
+    // Window Actions
+    function openWindow(id) {
+      const win = document.getElementById(`win-${id}`);
+      if (!win) return;
+
+      if (!openWindows[id]) {
+        openWindows[id] = true;
+        // set default positions
+        const pos = windowPositions[id];
+        if (pos) {
+          win.style.width = `${pos.w}px`;
+          win.style.height = `${pos.h}px`;
+          win.style.left = `${pos.x}px`;
+          win.style.top = `${pos.y}px`;
+        }
+      }
+      
+      win.classList.remove('minimized');
+      win.classList.add('show');
+      
+      focusWindow(id);
+      renderTaskbarTabs();
+    }
+
+    function closeWindow(id) {
+      const win = document.getElementById(`win-${id}`);
+      if (!win) return;
+      win.classList.remove('show');
+      win.classList.remove('maximized');
+      delete openWindows[id];
+      if (activeWindowId === id) activeWindowId = '';
+      renderTaskbarTabs();
+    }
+
+    function minimizeWindow(id) {
+      const win = document.getElementById(`win-${id}`);
+      if (!win) return;
+      win.classList.add('minimized');
+      if (activeWindowId === id) activeWindowId = '';
+      renderTaskbarTabs();
+    }
+
+    function toggleMaximizeWindow(id) {
+      const win = document.getElementById(`win-${id}`);
+      if (!win) return;
+      win.classList.toggle('maximized');
+    }
+
+    function focusWindow(id) {
+      document.querySelectorAll('.window').forEach(w => w.classList.remove('active-window'));
+      
+      const win = document.getElementById(`win-${id}`);
+      if (!win) return;
+      
+      topZIndex += 1;
+      win.style.zIndex = topZIndex;
+      win.classList.add('active-window');
+      activeWindowId = id;
+      
+      renderTaskbarTabs();
+    }
+
+    // Taskbar Tabs Dynamic Generation
+    function renderTaskbarTabs() {
+      const container = document.getElementById('task-tabs');
+      container.innerHTML = '';
+
+      const titles = {
+        about: 'about_me.txt',
+        gsoc: 'GSoC_openSUSE.sh',
+        projects: 'projects.app',
+        skills: 'skills.sh',
+        certs: 'credentials.txt',
+        terminal: 'Terminal.app',
+        mail: 'Compose_Email.app'
+      };
+
+      const svgs = {
+        about: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+        gsoc: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
+        projects: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
+        skills: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3m-12-18A3 3 0 0 0 3 6v12a3 3 0 0 0 3 3"/></svg>`,
+        certs: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>`,
+        terminal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+        mail: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`
+      };
+
+      Object.keys(openWindows).forEach(id => {
+        const tab = document.createElement('div');
+        tab.className = `taskbar-tab ${activeWindowId === id ? 'active-tab' : ''}`;
+        tab.onclick = () => {
+          const win = document.getElementById(`win-${id}`);
+          if (win.classList.contains('minimized') || activeWindowId !== id) {
+            openWindow(id);
+          } else {
+            minimizeWindow(id);
+          }
+        };
+        
+        tab.innerHTML = `
+          ${svgs[id]}
+          <span>${titles[id]}</span>
+        `;
+        container.appendChild(tab);
+      });
+    }
+
+    // Terminal Commands Logic
+    const termInput = document.getElementById('terminal-in');
+    const termOutput = document.getElementById('terminal-out');
+
+    const helpInfo = `Available commands:
+  <span class="terminal-cyan">about</span>       - Brief professional summary of Geetansh.
+  <span class="terminal-cyan">projects</span>    - List core production and coding projects.
+  <span class="terminal-cyan">gsoc</span>        - Display details regarding openSUSE Summer of Code project.
+  <span class="terminal-cyan">skills</span>      - Render computer languages and tools metrics.
+  <span class="terminal-cyan">certs</span>       - View hackathon, competitive programming and job credentials.
+  <span class="terminal-cyan">neofetch</span>    - Print local system specs alongside avatar logo.
+  <span class="terminal-cyan">contact</span>     - View contact methods (Email, Social, etc).
+  <span class="terminal-cyan">clear</span>       - Wipe current session outputs from this screen.`;
+
+    const bioInfo = `Geetansh Goyal - Competitive Programmer & Dev
+Selected for Google Summer of Code 2026 under openSUSE.
+Qualified as an ICPC Amritapuri Regionalist 2025.
+Education: Bachelor of Tech (CS) at Newton School of Technology (2025-2029).
+Grade: 7.48 / 10.0`;
+
+    const projectsInfo = `[Projects Showcase]
+1. <span class="terminal-cyan">RetroOS</span> (Vanilla JS, Canvas API, Web Audio API)
+   - Highly operational 2D desktop OS running 15 functional widgets.
+2. <span class="terminal-cyan">Instagram CLI client</span> (Python, Instagrapi)
+   - Terminal automation framework managing DM pipelines, secure 2FA, and loops.
+3. <span class="terminal-cyan">NST Construct 2025</span> (React, Express, Firebase)
+   - Full stack platform handling 700+ registrations, and mitigating real time attacks.`;
+
+    const gsocInfo = `[GSoC '26 openSUSE Project]
+Role: Core Contributor (Uyuni automation adaptation)
+Scope: Architecting highly modular event loops driven by MQTT brokers and Node-RED servers. High-capacity deployment for thousands of host nodes.`;
+
+    const skillsInfo = `[Technical Stack & Skill Grid]
+- <span class="terminal-yellow">Languages</span>: C++ (90%), JavaScript (85%), Python (80%), HTML/CSS (90%)
+- <span class="terminal-purple">Software</span>: React.js (80%), TailwindCSS (85%), Node-RED / MQTT (85%), Git & Actions (80%)
+- <span class="terminal-green">Soft Skills</span>: Competitive Programming, System Design, Team Leadership`;
+
+    const certsInfo = `[Credentials & Accolades]
+- ICPC Amritapuri Regionalist 2025 (Qualified for ICPC Regionals).
+- Certified Web Development Intern (Varlyq Technologies, Remote).`;
+
+    const contactInfo = `[Communication Ports]
+- Email: <span class="terminal-cyan">goyalgeetansh@gmail.com</span>
+- Github: <span class="terminal-cyan">github.com/geetxnshgoyal</span>
+- LinkedIn: <span class="terminal-cyan">linkedin.com/in/geetanshgoyal</span>`;
+
+    const asciiAvatar = `
+    <span class="terminal-yellow">      /\\_____/\\</span>      <span class="terminal-cyan">OS</span>: RetroOS v2.6.0
+    <span class="terminal-yellow">     /  o   o  \\</span>     <span class="terminal-cyan">Host</span>: GeetanshGoyal-PC
+    <span class="terminal-yellow">    ( ==  ^  == )</span>    <span class="terminal-cyan">Kernel</span>: 3D Three.js Web Engine
+    <span class="terminal-yellow">     )         (</span>     <span class="terminal-cyan">Shell</span>: bash / zsh
+    <span class="terminal-yellow">    (           )</span>    <span class="terminal-cyan">Uptime</span>: 1h 45m
+    <span class="terminal-yellow">   (  🏆      🏆  )</span>  <span class="terminal-cyan">CPU</span>: Brain Core (1 Core)
+    <span class="terminal-yellow">    \\___________/</span>    <span class="terminal-cyan">RAM</span>: 16 GB / 64 GB
+     <span class="terminal-purple">|||||||||||||</span>   <span class="terminal-cyan">Status</span>: Selected for GSoC 2026!
+     <span class="terminal-purple">|||||||||||||</span>   <span class="terminal-cyan">Awards</span>: ICPC Amritapuri Regionalist 2025`;
+
+    termInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const cmd = termInput.value.trim().toLowerCase();
+        termInput.value = '';
+
+        // Write command input
+        const userLine = document.createElement('div');
+        userLine.className = 'terminal-line';
+        userLine.innerHTML = `<span class="terminal-green">geetansh@retroos:~$</span> ${cmd}`;
+        termOutput.appendChild(userLine);
+
+        // Execute command
+        const respLine = document.createElement('div');
+        respLine.className = 'terminal-line';
+
+        switch (cmd) {
+          case 'help':
+            respLine.innerHTML = helpInfo;
+            break;
+          case 'about':
+            respLine.innerHTML = bioInfo;
+            break;
+          case 'projects':
+            respLine.innerHTML = projectsInfo;
+            break;
+          case 'gsoc':
+            respLine.innerHTML = gsocInfo;
+            break;
+          case 'skills':
+            respLine.innerHTML = skillsInfo;
+            break;
+          case 'certs':
+            respLine.innerHTML = certsInfo;
+            break;
+          case 'contact':
+            respLine.innerHTML = contactInfo;
+            break;
+          case 'neofetch':
+            respLine.innerHTML = asciiAvatar;
+            break;
+          case 'clear':
+            termOutput.innerHTML = '';
+            break;
+          default:
+            respLine.innerHTML = `command not found: <span class="terminal-purple">${cmd}</span>. Type <span class="terminal-yellow">help</span> for assistance.`;
+        }
+
+        termOutput.appendChild(respLine);
+        termOutput.scrollTop = termOutput.scrollHeight;
+      }
+    });
+
+    // Mail Client Fetch Sender
+    function sendMail(event) {
+      event.preventDefault();
+      
+      const submitBtn = document.getElementById('mail-submit');
+      const statusDiv = document.getElementById('mail-status');
+      
+      const name = document.getElementById('mail-name').value;
+      const email = document.getElementById('mail-email').value;
+      const company = document.getElementById('mail-company').value;
+      const message = document.getElementById('mail-message').value;
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Transmitting Data...';
+      statusDiv.className = 'form-status';
+      statusDiv.innerText = '';
+
+      fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, company, message })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Response returned a non-200 code');
+        return res.json();
+      })
+      .then(data => {
+        statusDiv.className = 'form-status success';
+        statusDiv.innerText = 'Transmission Received! I will get in touch shortly. 🚀';
+        document.getElementById('email-form').reset();
+      })
+      .catch(err => {
+        console.error(err);
+        statusDiv.className = 'form-status error';
+        statusDiv.innerText = 'System Fault: Unable to dispatch email right now. Let\'s try manually at goyalgeetansh@gmail.com!';
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Send Transmission';
+      });
+    }
+
+    // Auto open Terminal and About windows on start
+    setTimeout(() => {
+      openWindow('about');
+      setTimeout(() => {
+        openWindow('terminal');
+      }, 300);
+    }, 800);
+  </script>
+</body>
+</html>
