@@ -1,8 +1,23 @@
 const path = require('path')
 const { merge } = require('webpack-merge')
 const commonConfiguration = require('./webpack.common.js')
-const ip = require('ip')
+const os = require('os')
 const portFinderSync = require('portfinder-sync')
+
+const getLocalIp = () => {
+    const interfaces = os.networkInterfaces()
+    for (const name of Object.keys(interfaces)) {
+        for (const net of interfaces[name]) {
+            // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
+            // Note: In newer Node.js versions net.family can be a string or number, so check for both.
+            if ((net.family === 'IPv4' || net.family === 4) && !net.internal) {
+                return net.address
+            }
+        }
+    }
+    return '0.0.0.0'
+}
+
 
 const infoColor = (_message) =>
 {
@@ -42,7 +57,7 @@ module.exports = merge(
             {
                 const port = devServer.options.port
                 const https = devServer.options.https ? 's' : ''
-                const localIp = ip.address()
+                const localIp = getLocalIp()
                 const domain1 = `http${https}://${localIp}:${port}`
                 const domain2 = `http${https}://localhost:${port}`
                 
