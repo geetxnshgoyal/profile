@@ -68,9 +68,19 @@ export default class Camera extends EventEmitter {
 
         document.addEventListener('mousedown', (event) => {
             event.preventDefault();
+
+            // Clicks forwarded out of the monitor iframe must never move the
+            // camera -- the user is interacting with the screen, not the room.
             // @ts-ignore
-            if (event.target.id === 'prevent-click') return;
-            // print target and current keyframe
+            if (event.inComputer) return;
+
+            // `closest` rather than an id equality check: the guard has to
+            // cover the overlay's children (clock, mute, free-cam) too, not
+            // just the wrapper element itself.
+            const target = event.target as HTMLElement | null;
+            if (target && target.closest && target.closest('#prevent-click'))
+                return;
+
             if (
                 this.currentKeyframe === CameraKey.IDLE ||
                 this.targetKeyframe === CameraKey.IDLE

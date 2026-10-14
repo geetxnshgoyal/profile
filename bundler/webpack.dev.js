@@ -18,51 +18,46 @@ const getLocalIp = () => {
     return '0.0.0.0'
 }
 
-
-const infoColor = (_message) =>
-{
-    return `\u001b[1m\u001b[34m${_message}\u001b[39m\u001b[22m`
+const infoColor = (_message) => {
+    return `[1m[34m${_message}[39m[22m`
 }
 
-module.exports = merge(
-    commonConfiguration,
-    {
-        stats: 'errors-warnings',
-        mode: 'development',
-        infrastructureLogging:
-        {
-            level: 'warn',
+module.exports = merge(commonConfiguration, {
+    stats: 'errors-warnings',
+    mode: 'development',
+    infrastructureLogging: {
+        level: 'warn',
+    },
+    devServer: {
+        // `local-ip` binds the LAN address *only*, so http://localhost:8080
+        // is refused even though the banner below advertises it. Binding all
+        // interfaces makes both URLs actually work.
+        host: '0.0.0.0',
+        port: portFinderSync.getPort(8080),
+        open: true,
+        server: 'http',
+        allowedHosts: 'all',
+        hot: false,
+        watchFiles: ['src/**', 'static/**'],
+        static: {
+            watch: true,
+            directory: path.join(__dirname, '../static'),
         },
-        devServer:
-        {
-            host: 'local-ip',
-            port: portFinderSync.getPort(8080),
-            open: true,
-            https: false,
-            allowedHosts: 'all',
-            hot: false,
-            watchFiles: ['src/**', 'static/**'],
-            static:
-            {
-                watch: true,
-                directory: path.join(__dirname, '../static')
-            },
-            client:
-            {
-                logging: 'none',
-                overlay: true,
-                progress: false
-            },
-            onAfterSetupMiddleware: function(devServer)
-            {
-                const port = devServer.options.port
-                const https = devServer.options.https ? 's' : ''
-                const localIp = getLocalIp()
-                const domain1 = `http${https}://${localIp}:${port}`
-                const domain2 = `http${https}://localhost:${port}`
-                
-                console.log(`Project running at:\n  - ${infoColor(domain1)}\n  - ${infoColor(domain2)}`)
-            }
-        }
-    }
-)
+        client: {
+            logging: 'none',
+            overlay: true,
+            progress: false,
+        },
+        // `onAfterSetupMiddleware` was removed in webpack-dev-server v5.
+        onListening: function (devServer) {
+            const port = devServer.server.address().port
+            const localIp = getLocalIp()
+            const domain1 = `http://${localIp}:${port}`
+            const domain2 = `http://localhost:${port}`
+
+            console.log(
+                `Project running at:\n  - ${infoColor(domain1)}\n  - ${infoColor(domain2)}`
+            )
+        },
+    },
+})
