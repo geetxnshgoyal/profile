@@ -69,7 +69,9 @@ export class ComputerAudio extends AudioSource {
 }
 
 export class AmbienceAudio extends AudioSource {
-    poolKey: string;
+    // Undefined until the ambience clip has actually started -- `playAudio`
+    // returns nothing when the buffer failed to load.
+    poolKey: string | undefined;
 
     constructor(manager: AudioManager) {
         super(manager);
@@ -118,6 +120,8 @@ export class AmbienceAudio extends AudioSource {
 
         const volume = this.mapValues(distance, 1200, 10000, 0, 0.2);
         const volumeClamped = Math.min(Math.max(volume, 0.05), 0.1);
+
+        if (!this.poolKey) return;
 
         this.manager.setAudioFilterFrequency(this.poolKey, freq - 3000);
         this.manager.setAudioVolume(this.poolKey, volumeClamped);

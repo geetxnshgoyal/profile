@@ -68,6 +68,12 @@ export default class Audio {
 
         // Setup
         const buffer = this.loadedAudio[sourceName];
+
+        // A clip that failed to load leaves no buffer behind. Bail out rather
+        // than constructing a THREE.Audio around `undefined`, which throws and
+        // takes the whole render loop down with it.
+        if (!buffer) return;
+
         const poolKey = sourceName + '_' + Object.keys(this.audioPool).length;
 
         let audio: THREE.Audio<any> | THREE.PositionalAudio = new THREE.Audio(

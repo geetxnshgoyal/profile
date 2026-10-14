@@ -144,48 +144,55 @@ export default class MonitorScreen extends EventEmitter {
         // Create iframe
         const iframe = document.createElement('iframe');
 
-        // Bubble mouse move events to the main application, so we can affect the camera
-        iframe.onload = () => {
-            if (iframe.contentWindow) {
-                window.addEventListener('message', (event) => {
-                    var evt = new CustomEvent(event.data.type, {
-                        bubbles: true,
-                        cancelable: false,
-                    });
+        // Bubble events from inside the iframe (and from the React overlay,
+        // which posts synthetic `_AUTO_` keystrokes) back into the main
+        // document, so the camera and audio manager can react to them.
+        // Registered once here rather than in `iframe.onload`, which would
+        // stack a duplicate listener every time the iframe reloads.
+        window.addEventListener('message', (event) => {
+            if (event.source !== iframe.contentWindow && event.source !== window)
+                return;
+            if (!event.data || typeof event.data.type !== 'string') return;
 
-                    // @ts-ignore
-                    evt.inComputer = true;
-                    if (event.data.type === 'mousemove') {
-                        var clRect = iframe.getBoundingClientRect();
-                        const { top, left, width, height } = clRect;
-                        const widthRatio = width / IFRAME_SIZE.w;
-                        const heightRatio = height / IFRAME_SIZE.h;
+            const evt = new CustomEvent(event.data.type, {
+                bubbles: true,
+                cancelable: false,
+            });
 
-                        // @ts-ignore
-                        evt.clientX = Math.round(
-                            event.data.clientX * widthRatio + left
-                        );
-                        //@ts-ignore
-                        evt.clientY = Math.round(
-                            event.data.clientY * heightRatio + top
-                        );
-                    } else if (event.data.type === 'keydown') {
-                        // @ts-ignore
-                        evt.key = event.data.key;
-                    } else if (event.data.type === 'keyup') {
-                        // @ts-ignore
-                        evt.key = event.data.key;
-                    }
+            // @ts-ignore
+            evt.inComputer = true;
 
-                    iframe.dispatchEvent(evt);
-                });
+            if (
+                event.data.type === 'mousemove' ||
+                event.data.type === 'mousedown' ||
+                event.data.type === 'mouseup'
+            ) {
+                const clRect = iframe.getBoundingClientRect();
+                const { top, left, width, height } = clRect;
+                const widthRatio = width / IFRAME_SIZE.w;
+                const heightRatio = height / IFRAME_SIZE.h;
+
+                // @ts-ignore
+                evt.clientX = Math.round(
+                    event.data.clientX * widthRatio + left
+                );
+                //@ts-ignore
+                evt.clientY = Math.round(
+                    event.data.clientY * heightRatio + top
+                );
+            } else if (
+                event.data.type === 'keydown' ||
+                event.data.type === 'keyup'
+            ) {
+                // @ts-ignore
+                evt.key = event.data.key;
             }
-        };
+
+            iframe.dispatchEvent(evt);
+        });
 
         // Set iframe attributes
-        // PROD
         iframe.src = './desktop.html';
-        const urlParams = new URLSearchParams(window.location.search);
         iframe.style.width = this.screenSize.width + 'px';
         iframe.style.height = this.screenSize.height + 'px';
         iframe.style.padding = IFRAME_PADDING + 'px';

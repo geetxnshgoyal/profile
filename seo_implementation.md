@@ -6,7 +6,7 @@ This document outlines the end-to-end Search Engine Optimization (SEO) setup con
 
 ## 1. Primary Metadata Configuration
 Configured inside [layout.tsx](file:///Users/geetanshgoyal/geetxnshgoyal/app/layout.tsx):
-- **Title and Template**: Structured dynamic titles (`Geetansh Goyal — Full Stack Developer | GSoC 2026 openSUSE | ICPC Amritapuri Regionalist`) with template capability for subpages.
+- **Title and Template**: Structured dynamic titles (`Geetansh Goyal - Full Stack Developer | GSoC 2026 openSUSE | ICPC Amritapuri Regionalist`) with template capability for subpages.
 - **Description**: A keyword-rich summary emphasizing your core achievements: Google Summer of Code, openSUSE event-driven automation, ICPC Amritapuri Regionalist 2025, Newton School of Technology, and key projects (RetroOS, Instagram CLI).
 - **Targeted Keywords**: Configured 80+ exact-match query keywords covering variations of your name, institutions, stack, roles, and open source involvement.
 

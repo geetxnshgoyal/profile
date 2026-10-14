@@ -21,15 +21,14 @@ const LoadingScreen: React.FC<LoadingProps> = () => {
     const [resources] = useState<string[]>([]);
     const [mobileWarning, setMobileWarning] = useState(window.innerWidth < 768);
 
-    const onResize = () => {
-        if (window.innerWidth < 768) {
-            setMobileWarning(true);
-        } else {
-            setMobileWarning(false);
-        }
-    };
+    useEffect(() => {
+        const onResize = () => {
+            setMobileWarning(window.innerWidth < 768);
+        };
 
-    window.addEventListener('resize', onResize);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -92,6 +91,22 @@ const LoadingScreen: React.FC<LoadingProps> = () => {
             ui.style.pointerEvents = 'none';
         }
     }, []);
+
+    // The BIOS footer advertises a key, so the key has to work. Enter starts
+    // the experience once the START button is actually on screen.
+    useEffect(() => {
+        if (startPopupOpacity !== 1) return;
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                start();
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [startPopupOpacity, start]);
 
     const getSpace = (sourceName: string) => {
         let spaces = '';
@@ -208,8 +223,7 @@ const LoadingScreen: React.FC<LoadingProps> = () => {
                         className="loading-screen-footer"
                     >
                         <p>
-                            Press <b>DEL</b> to enter SETUP , <b>ESC</b> to skip
-                            memory test
+                            Press <b>ENTER</b> to start
                         </p>
                         <p>{getCurrentDate()}</p>
                     </div>

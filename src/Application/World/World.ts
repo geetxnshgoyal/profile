@@ -5,8 +5,6 @@ import MonitorScreen from './MonitorScreen';
 import Environment from './Environment';
 import Decor from './Decor';
 import CoffeeSteam from './CoffeeSteam';
-import Cursor from './Cursor';
-import Hitboxes from './Hitboxes';
 import AudioManager from '../Audio/AudioManager';
 import Particles from './Particles';
 
@@ -21,7 +19,6 @@ export default class World {
     computerSetup: ComputerSetup;
     monitorScreen: MonitorScreen;
     coffeeSteam: CoffeeSteam;
-    cursor: Cursor;
     audioManager: AudioManager;
     particles: Particles;
 
@@ -39,8 +36,6 @@ export default class World {
             this.coffeeSteam = new CoffeeSteam();
             this.audioManager = new AudioManager();
             this.particles = new Particles();
-            // const hb = new Hitboxes();
-            // this.cursor = new Cursor();
         });
     }
 
