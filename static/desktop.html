@@ -1289,14 +1289,92 @@
         <div class="win-body">
           <div class="project">
             <div class="project-head">
+              <h3>Uyuni MQTT &amp; Node-RED</h3>
+              <span class="when">GSoC 2026 &middot; openSUSE</span>
+            </div>
+            <p>Uyuni knew when a machine registered or a Salt job finished, but none of it left the
+              server. I made it publish those events over MQTT on a documented topic scheme, plus
+              Node-RED nodes so automations can be wired up without knowing Uyuni's internals.</p>
+            <div class="tags">
+              <span class="tag">Java</span><span class="tag">MQTT</span>
+              <span class="tag">Node-RED</span><span class="tag">Containers</span>
+            </div>
+            <div class="links">
+              <a class="link-btn" href="https://github.com/uyuni-project/uyuni/pull/12385" target="_blank"
+                rel="noopener">PR +5,211</a>
+              <a class="link-btn" href="https://github.com/uyuni-project/uyuni-rfc/pull/119" target="_blank"
+                rel="noopener">RFC</a>
+              <a class="link-btn" href="https://news.opensuse.org/2026/09/03/gsoc-2026-uyuni-mqtt-nodered/"
+                target="_blank" rel="noopener">Write-up</a>
+            </div>
+          </div>
+
+          <div class="project">
+            <div class="project-head">
+              <h3>Argus</h3>
+              <span class="when">Sep 2026</span>
+            </div>
+            <p>College attendance that resists proxies. The classroom QR rotates every three seconds
+              and the phone signs each scan with a hardware key bound to that student and unlocked by
+              their own face. Replays and other people's phones get rejected outright.</p>
+            <div class="tags">
+              <span class="tag">TypeScript</span><span class="tag">Fastify</span>
+              <span class="tag">PostgreSQL</span><span class="tag">React</span><span class="tag">Flutter</span>
+            </div>
+            <div class="links">
+              <a class="link-btn" href="https://argus-attendance.vercel.app" target="_blank"
+                rel="noopener">Live</a>
+              <span class="link-btn" aria-disabled="true">Private repo</span>
+            </div>
+          </div>
+
+          <div class="project">
+            <div class="project-head">
+              <h3>Doorman</h3>
+              <span class="when">Aug 2026</span>
+            </div>
+            <p>Your smart bulb has no browser, so it will never clear a hotel captive portal. Doorman
+              turns a cheap ESP32 into the doorman that signs it in: it handles the login, including
+              WPA2-Enterprise, and hands everything behind it a plain WPA2-PSK network.</p>
+            <div class="tags">
+              <span class="tag">C++</span><span class="tag">ESP32</span>
+              <span class="tag">NAT bridge</span><span class="tag">Web Serial</span>
+            </div>
+            <div class="links">
+              <a class="link-btn" href="https://github.com/geetxnshgoyal/m5-StickC-plus2-doorman" target="_blank"
+                rel="noopener">Source</a>
+              <a class="link-btn" href="https://geetxnshgoyal.github.io/m5-StickC-plus2-doorman/" target="_blank"
+                rel="noopener">Flash it</a>
+            </div>
+          </div>
+
+          <div class="project">
+            <div class="project-head">
+              <h3>Marvin</h3>
+              <span class="when">Sep 2026 &middot; Geeko Foundation</span>
+            </div>
+            <p>Travel-support tooling for the openSUSE Geeko Foundation: speakers request event
+              funding, a committee reviews, finance pays out through Wise. Top contributor by commit
+              count, and I added the project's first tests and CI.</p>
+            <div class="tags">
+              <span class="tag">Django</span><span class="tag">Python</span>
+              <span class="tag">Wise API</span><span class="tag">GitHub Actions</span>
+            </div>
+            <div class="links">
+              <span class="link-btn" aria-disabled="true">Private repo</span>
+            </div>
+          </div>
+
+          <div class="project">
+            <div class="project-head">
               <h3>RetroOS</h3>
               <span class="when">Feb 2026</span>
             </div>
-            <p>A browser-based operating system with over 15 applications, built with no external
-              dependencies. This monitor runs a tiling-window edition of it.</p>
+            <p>A browser-based operating system with no external dependencies. This monitor is
+              running a tiling-window edition of it right now.</p>
             <div class="tags">
               <span class="tag">Vanilla JS</span><span class="tag">Canvas API</span>
-              <span class="tag">Web Audio API</span><span class="tag">AI Chat API</span>
+              <span class="tag">Web Audio API</span>
             </div>
             <div class="links">
               <a class="link-btn" href="https://github.com/geetxnshgoyal/Retro-OS" target="_blank"
@@ -1304,41 +1382,6 @@
               <a class="link-btn" href="https://retro-os-ivory.vercel.app" target="_blank" rel="noopener">Live</a>
             </div>
           </div>
-
-          <div class="project">
-            <div class="project-head">
-              <h3>Instagram CLI</h3>
-              <span class="when">Jan 2026</span>
-            </div>
-            <p>A terminal client for Instagram DMs: inbox queries, threaded messaging, 2FA login,
-              and background polling automation.</p>
-            <div class="tags">
-              <span class="tag">Python</span><span class="tag">Instagrapi</span>
-              <span class="tag">CLI architecture</span><span class="tag">Automation</span>
-            </div>
-            <div class="links">
-              <a class="link-btn" href="https://github.com/geetxnshgoyal/Instagram-CLI-python" target="_blank"
-                rel="noopener">Source</a>
-            </div>
-          </div>
-
-          <div class="project">
-            <div class="project-head">
-              <h3>NST Construct</h3>
-              <span class="when">Sep 2025</span>
-            </div>
-            <p>The platform behind our regional hackathon. Handled 700+ registrations and absorbed a
-              15k-request bot attack through backend validation.</p>
-            <div class="tags">
-              <span class="tag">React</span><span class="tag">Vite</span><span class="tag">Express</span>
-              <span class="tag">Firebase</span><span class="tag">Tailwind</span>
-            </div>
-            <div class="links">
-              <a class="link-btn" href="https://github.com/geetxnshgoyal/construct2.0" target="_blank"
-                rel="noopener">Source</a>
-            </div>
-          </div>
-        </div>
       </section>
 
       <!-- ---------------- skills ---------------- -->
