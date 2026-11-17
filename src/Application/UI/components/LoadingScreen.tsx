@@ -97,9 +97,15 @@ const LoadingScreen: React.FC<LoadingProps> = () => {
     useEffect(() => {
         if (startPopupOpacity !== 1) return;
 
+        // One shot: keys typed inside the monitor are re-dispatched on the
+        // page, so a listener left attached would restart the intro on every
+        // Enter or Space pressed in the OS.
         const onKeyDown = (event: KeyboardEvent) => {
+            // @ts-ignore set by MonitorScreen on forwarded events
+            if (event.inComputer) return;
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
+                window.removeEventListener('keydown', onKeyDown);
                 start();
             }
         };
